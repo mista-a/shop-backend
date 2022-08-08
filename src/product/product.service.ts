@@ -226,9 +226,7 @@ export class ProductService {
   }
 
   async findOne(userId: number, productId: number) {
-    console.log(productId);
-
-    const product = await this.product.findOneBy({ id: productId });
+    let product = await this.product.findOneBy({ id: productId });
 
     if (userId) {
       const user = await this.user.findOne({
@@ -243,14 +241,14 @@ export class ProductService {
       product.views += 1;
       await this.product.save(product);
 
-      const filteredProducts: any = product;
+      const filteredProduct: any = product;
       for (let productItem of user.cartItems) {
         if (productItem.product.id === productId) {
-          filteredProducts.inCart = true;
+          filteredProduct.inCart = true;
         }
       }
 
-      return filteredProducts;
+      return filteredProduct;
     }
 
     return product;

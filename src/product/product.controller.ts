@@ -43,6 +43,7 @@ export class ProductController {
     return this.productService.findByCategory(name);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('product/:productId')
   findOne(@User() userId: number, @Param('productId') productId: string) {
     return this.productService.findOne(userId, +productId);
