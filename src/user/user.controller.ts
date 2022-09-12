@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -14,6 +15,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { User } from '../decorators/user.decorator';
 import { addToCartDto } from './dto/add-to-cart.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { PaginationDto } from 'src/product/dto/pagination.dto';
 
 @Controller('users')
 export class UserController {
@@ -44,8 +46,8 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Get('/favorites')
-  getFavorites(@User() id: number) {
-    return this.userService.getFavorites(id);
+  getFavorites(@User() id: number, @Query() query: PaginationDto) {
+    return this.userService.getFavorites(id, query);
   }
 
   @UseGuards(JwtAuthGuard)

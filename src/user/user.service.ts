@@ -7,13 +7,16 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserEntity } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { LoginUserDto } from './dto/login-user.dto';
-import { CreateProductDto } from 'src/product/dto/create-product.dto';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { ProductEntity } from 'src/product/entities/product.entity';
 import { CartItemEntity } from './entities/cartItem.entity';
 import { OrderEntity } from './entities/order.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
+import {
+  ProductSortEnum,
+  SearchProductDto,
+} from 'src/product/dto/search-product.dto';
+import { PaginationDto } from 'src/product/dto/pagination.dto';
 
 @Injectable()
 export class UserService {
@@ -66,18 +69,33 @@ export class UserService {
     }
   }
 
-  async getFavorites(id: number) {
-    const user = await this.repository.findOne({
-      where: { id },
-      relations: ['favorites'],
+  async getFavorites(id: number, query: PaginationDto) {
+    const page: number = +query.page || 1;
+    const limit: number = +query.limit || 12;
+
+    const qb = this.repository
+      .createQueryBuilder('user')
+      .where({ id })
+      .leftJoinAndSelect('user.favorites', 'favorites');
+
+    const totalProducts = (await qb.getOne()).favorites.length;
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    const user = await qb
+      .limit(limit)
+      .offset((page - 1) * limit)
+      .getOne();
+
+    const filteredProducts = user.favorites.map((product) => {
+      return { ...product, inFavorite: true };
     });
 
-    const filteredProducts: any = user.favorites;
-    filteredProducts.map((product) => {
-      product.inFavorite = true;
-    });
-
-    return filteredProducts;
+    return {
+      favorites: filteredProducts,
+      totalPages,
+      totalProducts,
+      page: +query.page || 1,
+    };
   }
 
   async getCart(userId: number) {

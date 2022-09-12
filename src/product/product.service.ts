@@ -48,30 +48,6 @@ export class ProductService {
     return products;
   }
 
-  create(dto: CreateProductDto) {
-    return this.product.save({
-      name: dto.name,
-      price: dto.price,
-      img: dto.img,
-      showcase: dto.showcase,
-      colors: dto.colors,
-      category: { name: dto.category },
-    });
-  }
-
-  async findProducts(userId: number, query: SearchProductDto & PaginationDto) {
-    const filteredQB = await this.filterProducts(query);
-
-    const products = await filteredQB.getMany();
-
-    const filteredProducts = await this.checkInFavorite(userId, products);
-
-    return {
-      products: filteredProducts,
-      page: +query.page || 1,
-    };
-  }
-
   async filterProducts(
     query: SearchProductDto & PaginationDto,
     qb?: SelectQueryBuilder<ProductEntity>,
@@ -122,9 +98,41 @@ export class ProductService {
       qb.andWhere(colorQuery);
     }
 
+    const totalProducts = (await qb.getManyAndCount())[1];
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    console.log(page, 'page');
+    console.log(limit, 'limit');
+
     qb.limit(limit).offset((page - 1) * limit);
 
-    return qb;
+    const filteredProducts = await qb.getMany();
+
+    return { filteredProducts, totalProducts, totalPages };
+  }
+
+  create(dto: CreateProductDto) {
+    return this.product.save({
+      name: dto.name,
+      price: dto.price,
+      img: dto.img,
+      showcase: dto.showcase,
+      colors: dto.colors,
+      category: { name: dto.category },
+    });
+  }
+
+  async findProducts(userId: number, query: SearchProductDto & PaginationDto) {
+    let { filteredProducts, totalPages, totalProducts } =
+      await this.filterProducts(query);
+    filteredProducts = await this.checkInFavorite(userId, filteredProducts);
+
+    return {
+      products: filteredProducts,
+      page: +query.page || 1,
+      totalPages,
+      totalProducts,
+    };
   }
 
   async findBySubcategory(
@@ -158,16 +166,16 @@ export class ProductService {
       });
     });
 
-    const filteredQB = await this.filterProducts(query, qb);
-
-    let filteredProducts = await filteredQB.getMany();
-
+    let { filteredProducts, totalProducts, totalPages } =
+      await this.filterProducts(query, qb);
     filteredProducts = await this.checkInFavorite(userId, filteredProducts);
 
     return {
       products: filteredProducts,
       page: +query.page || 1,
       productColors,
+      totalProducts,
+      totalPages,
     };
   }
 
@@ -215,13 +223,13 @@ export class ProductService {
   async search(query: SearchProductDto & PaginationDto) {
     const qb = this.product.createQueryBuilder('products');
 
-    const filteredQb = await this.filterProducts(query, qb);
-
-    const [products, total] = await filteredQb.getManyAndCount();
+    const { filteredProducts, totalPages, totalProducts } =
+      await this.filterProducts(query, qb);
 
     return {
-      products,
-      total,
+      filteredProducts,
+      totalPages,
+      totalProducts,
     };
   }
 

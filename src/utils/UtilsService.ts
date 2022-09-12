@@ -7,7 +7,6 @@ export class UtilsService {
           name.substring(1, 1) + name[0].toUpperCase() + name.substring(1),
       )
       .join(' ');
-
     return text;
   };
 }
