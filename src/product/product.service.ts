@@ -101,9 +101,6 @@ export class ProductService {
     const totalProducts = (await qb.getManyAndCount())[1];
     const totalPages = Math.ceil(totalProducts / limit);
 
-    console.log(page, 'page');
-    console.log(limit, 'limit');
-
     qb.limit(limit).offset((page - 1) * limit);
 
     const filteredProducts = await qb.getMany();
